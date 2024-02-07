@@ -1,33 +1,27 @@
 #!/bin/bash
 
 # File containing username and password 
-cred_file=credentials.txt
+cred_file="credentials.txt"
+echo $cred_file
 
-# File containing IP addresses
-ip_file=ip_list.txt
+ip_file="ip_list.txt"
+echo $ip_file
 
-# Output file
-output=aide_status.txt 
+output="aide_status.txt"
+echo $output
 
-# Read credentials line by line
-while read user pass; do
+user=$(head -1 $cred_file | sed 's/ *$//g' )
+pass=$(tail -1 $cred_file | sed 's/ *$//g' )
 
-  # Read IP addresses 
-  while read ip; do
+while read ip; do
+  ip=$(echo $ip | sed 's/ *$//g' ) 
 
-    # SSH login
-    sshpass -p "$pass" ssh -q -o StrictHostKeyChecking=no "$user"@"$ip" exit
-
-    # Check AIDE status
-    if sshpass -p "$pass" ssh -q -o StrictHostKeyChecking=no "$user"@"$ip" "aide --check" | grep -q "AIDE found differences"; then
-      aide_status="Running"
-    else
-      aide_status="Not Running"  
-    fi
-
+  if sshpass -p "$pass" ssh -q -o StrictHostKeyChecking=no "$user"@"$ip" "aide --check" | grep -q "AIDE found differences"; then
+    aide_status="Running"
+  else
+    aide_status="Not Running"  
+  fi
     # Write to output  
-    echo "$ip $aide_status" >> "$output"
+  echo "$ip : $aide_status" >> $output
 
-  done < "$ip_file"
-
-done < "$cred_file"
+done <$ip_file
